@@ -7,7 +7,7 @@ public class AppManager : MonoBehaviour
     [Header("Controllers")]
     [SerializeField] private HomePage homePage;
     [SerializeField] private QuestionPage questionPage;
-    [SerializeField] private Scene3DController sceneController;
+    [SerializeField] private SceneVideoController sceneController;
 
     [Header("Core UI")]
     [SerializeField] private BackButtonController backButtonController;

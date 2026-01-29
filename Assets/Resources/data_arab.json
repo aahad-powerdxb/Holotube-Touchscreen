@@ -16,11 +16,11 @@
     },
     "page3": {
         "animation": [
-            {"text": "Placeholder_Anim_01 (1)"},
-            {"text": "Placeholder_Anim_02 (1)"},
-            {"text": "Placeholder_Anim_03 (1)"},
-            {"text": "Placeholder_Anim_04 (1)"},
-            {"text": "Placeholder_Anim_05 (1)"}
+            {"text": "identify-corners"},
+            {"text": "identify-corners"},
+            {"text": "identify-corners"},
+            {"text": "identify-corners"},
+            {"text": "identify-corners"}
         ]
     }
 }

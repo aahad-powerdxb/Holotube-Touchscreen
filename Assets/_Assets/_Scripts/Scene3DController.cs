@@ -1,74 +1,72 @@
 using System;
 using System.Collections;
 using UnityEngine;
+using UnityEngine.Video; // NEW
 
-public class Scene3DController : MonoBehaviour
+public class SceneVideoController : MonoBehaviour
 {
     [Header("References")]
-    [SerializeField] private GameObject container3D;
+    // CHANGED: Now references the VideoPlayer, not a generic container
+    [SerializeField] private VideoPlayer videoPlayer;
 
-    // Events
     public event Action OnAnimationFinished;
 
-    private AnimationLogic _logic;
+    private VideoLogic _logic;
     private Coroutine _activeRoutine;
 
     public void Initialize()
     {
-        container3D.SetActive(true);
-        _logic = new AnimationLogic(container3D);
-        _logic.PlayIdle();
+        // Setup Logic
+        _logic = new VideoLogic(videoPlayer);
+
+        // Start Idle Loop immediately (-1 index)
+        _logic.PlayVideo(-1, false);
     }
 
     public void UpdateModels(AppData data, bool isArabic)
     {
-        // Extract names from data
         int count = data.page3.animation.Count;
         string[] names = new string[count];
         for (int i = 0; i < count; i++) names[i] = data.page3.animation[i].text;
 
-        if (!isArabic) _logic.setModels(names, null);
-        else _logic.setModels(null, names);
+        if (!isArabic) _logic.SetFileNames(names, null);
+        else _logic.SetFileNames(null, names);
     }
 
     public void PlaySequence(int index, bool isArabic)
     {
         if (_activeRoutine != null) StopCoroutine(_activeRoutine);
 
-        _logic.PlayAnimation(index, isArabic);
+        _logic.PlayVideo(index, isArabic);
         _activeRoutine = StartCoroutine(WaitAndPlayIdle());
     }
 
     public int GetPlayingIndex(bool isArabic)
     {
-        return _logic.GetPlayingAnimationIndex(isArabic);
+        return _logic.GetPlayingIndex(isArabic);
     }
 
     private IEnumerator WaitAndPlayIdle()
     {
-        yield return null; // Wait for state update
+        // Give the VideoPlayer a moment to load the new clip metadata
+        yield return null;
+        yield return new WaitForSeconds(0.1f);
 
-        // Find active animator
-        Animator currentAnim = null;
-        foreach (Transform child in container3D.transform)
+        // Wait for length of video
+        double duration = _logic.GetCurrentClipLength();
+
+        if (duration > 0)
         {
-            if (child.gameObject.activeSelf)
-            {
-                currentAnim = child.GetComponent<Animator>();
-                break;
-            }
+            yield return new WaitForSeconds((float)duration);
+        }
+        else
+        {
+            yield return new WaitForSeconds(2.0f); // Safety fallback
         }
 
-        // Wait for finish
-        if (currentAnim != null)
-            yield return new WaitUntil(() => currentAnim.GetCurrentAnimatorStateInfo(0).normalizedTime >= 1.0f);
-        else
-            yield return new WaitForSeconds(2.0f); // Fallback
+        // Return to Idle Loop
+        _logic.PlayVideo(-1, false); // -1 = Idle
 
-        // Reset 3D
-        _logic.PlayIdle();
-
-        // Notify UI
         OnAnimationFinished?.Invoke();
     }
 }
