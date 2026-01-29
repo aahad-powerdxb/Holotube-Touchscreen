@@ -1,0 +1,26 @@
+{
+    "page1": {
+        "text": [
+            {"title": "اختر اللغة"},
+            {"button": "العربية"}
+        ]
+    },
+    "page2": {
+        "buttons": [
+            {"text": "اختر اللغة"},
+            {"text": "ﻛﻤﺎ أرى"},
+            {"text": "تَثَاقَلَ الوَقْتُ فَوْقَ كَوَاهِلِ المُنْتَظِرِينَ"},
+            {"text": "ﺳﺆال ٤"},
+            {"text": "ﺳﺆال ٥"}
+        ]
+    },
+    "page3": {
+        "animation": [
+            {"text": "Placeholder_Anim_01 (1)"},
+            {"text": "Placeholder_Anim_02 (1)"},
+            {"text": "Placeholder_Anim_03 (1)"},
+            {"text": "Placeholder_Anim_04 (1)"},
+            {"text": "Placeholder_Anim_05 (1)"}
+        ]
+    }
+}

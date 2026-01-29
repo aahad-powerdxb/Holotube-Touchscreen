@@ -1,0 +1,26 @@
+{
+    "page1": {
+        "text": [
+            {"title": "Choose Language"},
+            {"button": "English"}
+        ]
+    },
+    "page2": {
+        "buttons": [
+            {"text": "Question 1"},
+            {"text": "Question 2"},
+            {"text": "Question 3"},
+            {"text": "Question 4"},
+            {"text": "Question 5"}
+        ]
+    },
+    "page3": {
+        "animation": [
+            {"text": "Placeholder_Anim_01"},
+            {"text": "Placeholder_Anim_02"},
+            {"text": "Placeholder_Anim_03"},
+            {"text": "Placeholder_Anim_04"},
+            {"text": "Placeholder_Anim_05"}
+        ]
+    }
+}
