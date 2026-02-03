@@ -24,7 +24,7 @@ public class Page2Data
 [Serializable]
 public class Page3Data
 {
-    public List<TextItem> animation;
+    public List<TextItem> video;
 }
 
 [Serializable]

@@ -1,14 +1,26 @@
 using System;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using ArabicSupport;
 
 public class QuestionPage : MonoBehaviour
 {
     [Header("UI References")]
     [SerializeField] private Transform buttonsContainer;
 
-    // Events
+    [Header("Footer Reference")]
+    [Tooltip("Drag the 'Footer' GameObject here")]
+    [SerializeField] private Transform footerContainer;
+
     public event Action<int> OnQuestionClicked;
+    public event Action OnNextClicked;
+
+    private int _totalQuestions = 0;
+    private int _pressedCount = 0;
+
+    // Track language state locally to handle Show() logic
+    private bool _isArabic = false;
 
     public void Initialize()
     {
@@ -17,66 +29,98 @@ public class QuestionPage : MonoBehaviour
 
     public void Refresh(AppData data, bool isArabic, int playingAnimationIndex)
     {
-        int dataCount = data.page2.buttons.Count;
+        _isArabic = isArabic;
+        _pressedCount = 0;
+        _totalQuestions = data.page2.buttons.Count;
         int btnCount = buttonsContainer.childCount;
 
-        // 1. Setup Buttons
-        for (int i = 0; i < dataCount; i++)
+        // 1. Update Footer Buttons (Language Aware)
+        UpdateFooterButtons();
+
+        // 2. Setup Question Buttons
+        for (int i = 0; i < _totalQuestions; i++)
         {
             if (i >= btnCount) break;
 
             var btnObj = buttonsContainer.GetChild(i);
             var btn = btnObj.GetComponent<Button>();
 
-            // Text
-            var smartText = btnObj.GetComponentInChildren<SmartText>();
-            if (smartText) smartText.Text = data.page2.buttons[i].text;
+            // A. Reset State
+            btn.interactable = true;
+            btn.onClick.RemoveAllListeners();
 
-            // Visuals
+            // B. Text Setup
+            var tmpText = btnObj.GetComponentInChildren<TextMeshProUGUI>();
+            if (tmpText)
+            {
+                string raw = data.page2.buttons[i].text;
+                tmpText.text = isArabic ? ArabicFixer.Fix(raw) : raw;
+                tmpText.fontWeight = FontWeight.Medium;
+            }
+
+            // C. Visuals Setup
             var visuals = btnObj.GetComponent<QuestionButtonVisuals>();
             if (!visuals) visuals = btnObj.gameObject.AddComponent<QuestionButtonVisuals>();
+            visuals.SetState(false, false);
 
-            // Listeners
-            btn.onClick.RemoveAllListeners();
+            // D. Click Logic
             int index = i;
-
-            // Logic
-            btn.onClick.AddListener(() => OnQuestionClicked?.Invoke(index));
-            // Visuals
-            btn.onClick.AddListener(() => HighlightButton(btn, true));
+            btn.onClick.AddListener(() =>
+            {
+                OnQuestionClicked?.Invoke(index);
+                btn.interactable = false;
+                visuals.SetState(true, true);
+                CheckAutoAdvance();
+            });
         }
-
-        // 2. Backward Detection (Sync UI with 3D)
-        Button activeBtn = null;
-        if (playingAnimationIndex != -1 && playingAnimationIndex < buttonsContainer.childCount)
-        {
-            activeBtn = buttonsContainer.GetChild(playingAnimationIndex).GetComponent<Button>();
-        }
-
-        // 3. Instant Snap
-        HighlightButton(activeBtn, false);
     }
 
-    public void ResetVisuals()
+    private void CheckAutoAdvance()
     {
-        // Called when animation finishes
-        HighlightButton(null, true);
-    }
-
-    private void HighlightButton(Button target, bool animate)
-    {
-        foreach (Transform child in buttonsContainer)
+        _pressedCount++;
+        if (_pressedCount >= _totalQuestions)
         {
-            var btn = child.GetComponent<Button>();
-            if (!btn) continue;
-
-            bool isTarget = (target != null) && (btn == target);
-            var visuals = btn.GetComponent<QuestionButtonVisuals>();
-
-            if (visuals) visuals.SetState(isTarget, animate);
+            Debug.Log("All questions visited. Auto-advancing to Ending Page.");
+            OnNextClicked?.Invoke();
         }
     }
 
-    public void Show() => gameObject.SetActive(true);
+    public void Show()
+    {
+        gameObject.SetActive(true);
+        // Ensure footer is correct whenever we show the page
+        UpdateFooterButtons();
+    }
+
     public void Hide() => gameObject.SetActive(false);
+
+    // --- NEW: Dynamic Footer Loop ---
+    private void UpdateFooterButtons()
+    {
+        if (!footerContainer) return;
+
+        // Determine which button name we want to see
+        string targetBtnName = _isArabic ? "Question_Btn_Arab" : "Question_Btn_Eng";
+
+        foreach (Transform child in footerContainer)
+        {
+            bool isTarget = child.name == targetBtnName;
+
+            // 1. Set Visibility
+            child.gameObject.SetActive(isTarget);
+
+            // 2. Attach Listener (ONLY to the active button)
+            if (isTarget)
+            {
+                Button btn = child.GetComponent<Button>();
+                if (btn)
+                {
+                    btn.onClick.RemoveAllListeners();
+                    btn.onClick.AddListener(() => OnNextClicked?.Invoke());
+                }
+            }
+        }
+    }
+
+    public void ResetVisuals() { }
 }

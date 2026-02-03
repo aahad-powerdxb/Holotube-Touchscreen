@@ -25,9 +25,9 @@ public class SceneVideoController : MonoBehaviour
 
     public void UpdateModels(AppData data, bool isArabic)
     {
-        int count = data.page3.animation.Count;
+        int count = data.page3.video.Count;
         string[] names = new string[count];
-        for (int i = 0; i < count; i++) names[i] = data.page3.animation[i].text;
+        for (int i = 0; i < count; i++) names[i] = data.page3.video[i].text;
 
         if (!isArabic) _logic.SetFileNames(names, null);
         else _logic.SetFileNames(null, names);

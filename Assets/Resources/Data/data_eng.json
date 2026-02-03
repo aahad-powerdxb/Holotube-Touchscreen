@@ -7,15 +7,15 @@
     },
     "page2": {
         "buttons": [
-            {"text": "Question 1"},
-            {"text": "Question 2"},
-            {"text": "Question 3"},
-            {"text": "Question 4"},
-            {"text": "Question 5"}
+            {"text": "What is the Mental Wealth Initiative?"},
+            {"text": "What is burn out and what causes it?"},
+            {"text": "How can we prevent burn out?"},
+            {"text": "What are early signs that a family member may be struggling mentally?"},
+            {"text": "How can parents support children’s mental well-being at home?"}
         ]
     },
     "page3": {
-        "animation": [
+        "video": [
             {"text": "identify-corners"},
             {"text": "identify-corners"},
             {"text": "identify-corners"},
