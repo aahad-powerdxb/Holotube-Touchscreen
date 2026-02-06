@@ -6,7 +6,7 @@ public class EndingPage : MonoBehaviour
     public event Action OnTimerFinished;
     private float _timer = 0;
     private bool _isActive = false;
-    private const float DURATION = 15f;
+    private const float DURATION = 10f;
 
     public void Show()
     {

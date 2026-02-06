@@ -33,5 +33,6 @@ public class TextItem
     // JSON keys vary (page1 uses "title"/"button", others use "text")
     public string text;
     public string title;
+    public string intro;
     public string button;
 }

@@ -1,13 +1,17 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Video; // NEW
+using UnityEngine.UI; // Required for RawImage
+using UnityEngine.Video;
 
 public class SceneVideoController : MonoBehaviour
 {
     [Header("References")]
-    // CHANGED: Now references the VideoPlayer, not a generic container
+    [Tooltip("Assign the Video_Screen object here.")]
     [SerializeField] private VideoPlayer videoPlayer;
+
+    // REMOVED: [SerializeField] private RawImage videoScreen; -> Redundant
 
     public event Action OnAnimationFinished;
 
@@ -16,57 +20,69 @@ public class SceneVideoController : MonoBehaviour
 
     public void Initialize()
     {
-        // Setup Logic
-        _logic = new VideoLogic(videoPlayer);
+        // 1. Automatically find the RawImage component on the same object as the VideoPlayer
+        RawImage screen = videoPlayer.GetComponent<RawImage>();
 
-        // Start Idle Loop immediately (-1 index)
-        _logic.PlayVideo(-1, false);
+        if (screen == null)
+        {
+            Debug.LogError("SceneVideoController: Could not find a RawImage component on the VideoPlayer object! Please check Video_Screen.");
+            return;
+        }
+
+        // 2. Pass both to the logic
+        _logic = new VideoLogic(videoPlayer, screen);
+
+        // 3. Start showing the logo immediately
+        _logic.ShowIdleImage();
     }
 
-    public void UpdateModels(AppData data, bool isArabic)
+    public void UpdateModels(AppData data)
     {
-        int count = data.page3.video.Count;
-        string[] names = new string[count];
-        for (int i = 0; i < count; i++) names[i] = data.page3.video[i].text;
+        if (data == null || data.page3 == null || data.page3.video == null) return;
 
-        if (!isArabic) _logic.SetFileNames(names, null);
-        else _logic.SetFileNames(null, names);
+        string introName = "";
+        if (data.page3.video.Count > 0)
+            introName = data.page3.video[0].intro;
+
+        List<string> questionNames = new List<string>();
+        for (int i = 1; i < data.page3.video.Count; i++)
+            questionNames.Add(data.page3.video[i].text);
+
+        _logic.ConfigurePlaylist(introName, questionNames.ToArray());
     }
 
-    public void PlaySequence(int index, bool isArabic)
+    public void PlayIntro()
     {
         if (_activeRoutine != null) StopCoroutine(_activeRoutine);
-
-        _logic.PlayVideo(index, isArabic);
-        _activeRoutine = StartCoroutine(WaitAndPlayIdle());
+        _logic.PlayIntro();
+        _activeRoutine = StartCoroutine(WaitAndReturnToIdle());
     }
 
-    public int GetPlayingIndex(bool isArabic)
+    public void PlaySequence(int index)
     {
-        return _logic.GetPlayingIndex(isArabic);
+        if (_activeRoutine != null) StopCoroutine(_activeRoutine);
+        _logic.PlayQuestion(index);
+        _activeRoutine = StartCoroutine(WaitAndReturnToIdle());
     }
 
-    private IEnumerator WaitAndPlayIdle()
+    public void StopAndShowIdle()
     {
-        // Give the VideoPlayer a moment to load the new clip metadata
+        if (_activeRoutine != null) StopCoroutine(_activeRoutine);
+        _logic.ShowIdleImage();
+    }
+
+    private IEnumerator WaitAndReturnToIdle()
+    {
         yield return null;
         yield return new WaitForSeconds(0.1f);
 
-        // Wait for length of video
         double duration = _logic.GetCurrentClipLength();
-
         if (duration > 0)
-        {
             yield return new WaitForSeconds((float)duration);
-        }
         else
-        {
-            yield return new WaitForSeconds(2.0f); // Safety fallback
-        }
+            yield return new WaitForSeconds(2.0f);
 
-        // Return to Idle Loop
-        _logic.PlayVideo(-1, false); // -1 = Idle
-
+        _logic.ShowIdleImage();
         OnAnimationFinished?.Invoke();
     }
 }

@@ -1,64 +1,93 @@
 using UnityEngine;
+using UnityEngine.UI;
 using UnityEngine.Video;
 
 public class VideoLogic
 {
     private VideoPlayer _player;
-    private string _idleName = "animation_looped_4K_v2"; // Default Idle Name
+    private RawImage _screen; // The single RawImage component
 
-    // We map indices to filenames
-    private string[] _englishFiles;
-    private string[] _arabicFiles;
+    // Assets
+    private Texture _logoTexture;     // Your static logo
+    private Texture _videoRenderTex;  // The video player's output texture
 
-    public VideoLogic(VideoPlayer player)
+    // Current Playlist
+    private string _currentIntroName;
+    private string[] _currentQuestionFiles;
+
+    public VideoLogic(VideoPlayer player, RawImage screen)
     {
         _player = player;
+        _screen = screen;
+
+        // 1. Save the Video Texture (so we can swap back to it later)
+        // Ensure the VideoPlayer in Inspector has "Target Texture" assigned!
+        _videoRenderTex = _player.targetTexture;
+
+        if (_videoRenderTex == null)
+            Debug.LogError("VideoLogic: VideoPlayer is missing a Target Texture! Please assign one in the Inspector.");
+
+        // 2. Load the Logo Texture
+        // Note: This loads the raw texture. If your logo is a Sprite, this grabs the texture behind it.
+        _logoTexture = Resources.Load<Texture>("Images/Idle");
+
+        if (_logoTexture == null)
+            Debug.LogError("VideoLogic: Could not find 'Resources/Images/logo'. Check file name/path.");
     }
 
-    public void SetFileNames(string[] english, string[] arabic)
+    public void ConfigurePlaylist(string introFileName, string[] questionFiles)
     {
-        _englishFiles = english;
-        _arabicFiles = arabic;
+        _currentIntroName = introFileName;
+        _currentQuestionFiles = questionFiles;
     }
 
-    /// <summary>
-    /// Loads and plays a video from Resources/Videos folder.
-    /// </summary>
-    /// <param name="index">-1 for Idle, 0-N for Questions</param>
-    public void PlayVideo(int index, bool isArabic)
+    public void ShowIdleImage()
     {
-        string targetName = _idleName;
+        _player.Stop();
 
-        // Determine filename
-        if (index != -1) // If not requesting Idle
+        if (_screen != null && _logoTexture != null)
         {
-            string[] targetList = isArabic ? _arabicFiles : _englishFiles;
-            if (targetList != null && index >= 0 && index < targetList.Length)
-            {
-                targetName = targetList[index];
-            }
+            // SWAP: Show the Logo
+            _screen.texture = _logoTexture;
+            _screen.color = Color.white; // Ensure it's fully visible
+        }
+    }
+
+    private void PlayVideoFile(string fileName)
+    {
+        // SWAP: Show the Video Texture
+        if (_screen != null && _videoRenderTex != null)
+        {
+            _screen.texture = _videoRenderTex;
         }
 
-        // --- THE FIX IS HERE ---
-        // Combine the folder name "Videos" with the file name
-        // Example path: "Videos/animation_looped_4K_v2"
-        string fullPath = "Videos/" + targetName;
-
+        string fullPath = "Videos/" + fileName;
         VideoClip clip = Resources.Load<VideoClip>(fullPath);
 
         if (clip != null)
         {
             _player.clip = clip;
-
-            // Logic: Idle loops, Questions play once
-            _player.isLooping = (index == -1);
-
+            _player.isLooping = false;
             _player.Play();
         }
         else
         {
-            // Debug error updated to help you debug paths
-            Debug.LogError($"VideoClip not found! Looked for path: 'Resources/{fullPath}'");
+            Debug.LogError($"VideoClip not found: '{fullPath}'");
+            ShowIdleImage();
+        }
+    }
+
+    public void PlayIntro()
+    {
+        if (!string.IsNullOrEmpty(_currentIntroName))
+            PlayVideoFile(_currentIntroName);
+    }
+
+    public void PlayQuestion(int index)
+    {
+        if (_currentQuestionFiles != null && index >= 0 && index < _currentQuestionFiles.Length)
+        {
+            PlayVideoFile(_currentQuestionFiles[index]);
         }
     }
 
@@ -66,26 +95,5 @@ public class VideoLogic
     {
         if (_player.clip != null) return _player.clip.length;
         return 0f;
-    }
-
-    // --- Backward Detection ---
-    public int GetPlayingIndex(bool isArabic)
-    {
-        if (_player.clip == null) return -1;
-
-        string currentName = _player.clip.name;
-        if (currentName == _idleName) return -1;
-
-        string[] targetList = isArabic ? _arabicFiles : _englishFiles;
-        if (targetList != null)
-        {
-            for (int i = 0; i < targetList.Length; i++)
-            {
-                // Note: .clip.name usually returns just the file name, not the path.
-                // So checking against targetList[i] is still correct.
-                if (targetList[i] == currentName) return i;
-            }
-        }
-        return -1;
     }
 }

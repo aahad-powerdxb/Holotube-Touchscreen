@@ -16,11 +16,12 @@
     },
     "page3": {
         "video": [
-            {"text": "identify-corners"},
-            {"text": "identify-corners"},
-            {"text": "identify-corners"},
-            {"text": "identify-corners"},
-            {"text": "identify-corners"}
+            {"intro": "A_Intro"},
+            {"text": "A_Answer_1"},
+            {"text": "A_Answer_2"},
+            {"text": "A_Answer_3"},
+            {"text": "A_Answer_4"},
+            {"text": "A_Answer_5"}
         ]
     }
 }
