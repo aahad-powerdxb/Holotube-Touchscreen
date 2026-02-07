@@ -5,11 +5,11 @@ using UnityEngine.Video;
 public class VideoLogic
 {
     private VideoPlayer _player;
-    private RawImage _screen; // The single RawImage component
+    private RawImage _screen;
+    private Texture _videoRenderTex;
 
-    // Assets
-    private Texture _logoTexture;     // Your static logo
-    private Texture _videoRenderTex;  // The video player's output texture
+    // Fixed path for the dedicated idle loop
+    private string _idleVideoPath = "Idle";
 
     // Current Playlist
     private string _currentIntroName;
@@ -19,43 +19,44 @@ public class VideoLogic
     {
         _player = player;
         _screen = screen;
-
-        // 1. Save the Video Texture (so we can swap back to it later)
-        // Ensure the VideoPlayer in Inspector has "Target Texture" assigned!
         _videoRenderTex = _player.targetTexture;
 
         if (_videoRenderTex == null)
             Debug.LogError("VideoLogic: VideoPlayer is missing a Target Texture! Please assign one in the Inspector.");
-
-        // 2. Load the Logo Texture
-        // Note: This loads the raw texture. If your logo is a Sprite, this grabs the texture behind it.
-        _logoTexture = Resources.Load<Texture>("Images/Idle");
-
-        if (_logoTexture == null)
-            Debug.LogError("VideoLogic: Could not find 'Resources/Images/logo'. Check file name/path.");
     }
 
     public void ConfigurePlaylist(string introFileName, string[] questionFiles)
     {
         _currentIntroName = introFileName;
         _currentQuestionFiles = questionFiles;
+
+        // REMOVED: Overwriting _idleVideoPath. 
+        // We keep it as "Idle" since you confirmed it is a separate file.
     }
 
-    public void ShowIdleImage()
+    // --- ALPHA CONTROL FOR FADING ---
+    public void SetScreenAlpha(float alpha)
     {
-        _player.Stop();
-
-        if (_screen != null && _logoTexture != null)
+        if (_screen != null)
         {
-            // SWAP: Show the Logo
-            _screen.texture = _logoTexture;
-            _screen.color = Color.white; // Ensure it's fully visible
+            Color c = _screen.color;
+            c.a = alpha;
+            _screen.color = c;
         }
     }
 
-    private void PlayVideoFile(string fileName)
+    public void ShowIdleVideo()
     {
-        // SWAP: Show the Video Texture
+        if (!string.IsNullOrEmpty(_idleVideoPath))
+        {
+            PlayVideoFile(_idleVideoPath, true);
+        }
+    }
+
+    private void PlayVideoFile(string fileName, bool shouldLoop = false)
+    {
+        // 1. Ensure Texture is assigned.
+        // NOTE: We do NOT reset color/alpha here. The Controller handles fades.
         if (_screen != null && _videoRenderTex != null)
         {
             _screen.texture = _videoRenderTex;
@@ -66,28 +67,30 @@ public class VideoLogic
 
         if (clip != null)
         {
+            // CRITICAL FIX: Stop and rewind to ensure clean transition
+            _player.Stop();
             _player.clip = clip;
-            _player.isLooping = false;
+            _player.isLooping = shouldLoop;
+            _player.time = 0; // Rewind
             _player.Play();
         }
         else
         {
-            Debug.LogError($"VideoClip not found: '{fullPath}'");
-            ShowIdleImage();
+            Debug.LogError($"VideoLogic: VideoClip not found at path: '{fullPath}'");
         }
     }
 
     public void PlayIntro()
     {
         if (!string.IsNullOrEmpty(_currentIntroName))
-            PlayVideoFile(_currentIntroName);
+            PlayVideoFile(_currentIntroName, false);
     }
 
     public void PlayQuestion(int index)
     {
         if (_currentQuestionFiles != null && index >= 0 && index < _currentQuestionFiles.Length)
         {
-            PlayVideoFile(_currentQuestionFiles[index]);
+            PlayVideoFile(_currentQuestionFiles[index], false);
         }
     }
 
